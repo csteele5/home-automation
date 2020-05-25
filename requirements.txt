@@ -1,0 +1,5 @@
+#Flask==0.12.2
+#Flask.ext
+flask
+flask_restful
+markdown==2.6.11
