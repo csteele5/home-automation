@@ -95,6 +95,70 @@ If a device with a given identifier already exists, the device will be overwritt
 - `404 Device not found` if device does not exist
 - `200 OK` on success
 
+### Basic Authentication API Test
+
+[Reference](https://www.roytuts.com/python-flask-http-basic-authentication/)
+
+Using login/pwd 'osboxes'
+
+`GET /rest-auth`
+
+**Response**
+
+- `401 UNAUTHORIZED` if login/password incorrect
+- `200 OK` on success
+
+```
+"You are authorized to see this content."
+```
+
+### Token Authentication API Test
+
+[Reference](https://flask-httpauth.readthedocs.io/en/latest/)
+
+Using Bearer Token 'secret-token-1'
+
+**Simple Token Verification**
+
+`GET /rest-authT`
+
+**Response**
+
+- `401 UNAUTHORIZED` if Token incorrect
+- `200 OK` on success
+
+```
+"Hello, john!"
+```
+
+**Access to Dataset**
+
+`GET /books`
+
+**Response**
+
+- `401 UNAUTHORIZED` if Token incorrect
+- `200 OK` on success
+
+```
+{
+  "data": [
+    {
+      "author": "Vernor Vinge",
+      "first_sentence": "The coldsleep itself was dreamless.",
+      "id": 0,
+      "title": "A Fire Upon the Deep",
+      "year_published": "1992"
+    }
+	...
+}
+```
+
+## Things to add!
+
+- Unit testing! [Python options with Flask](https://www.patricksoftwareblog.com/unit-testing-a-flask-application/)
+- Database support for token persistent storage [Reference](https://blog.miguelgrinberg.com/post/restful-authentication-with-flask)
+
 ---
 
 ## Troubleshooting Notes
@@ -130,9 +194,9 @@ sudo nano /etc/docker/daemon.json
 
 Add content:
 
-```
+```json
 {
-	"dns": ["172.16.10.2"]
+  "dns": ["172.16.10.2"]
 }
 ```
 

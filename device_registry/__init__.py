@@ -2,11 +2,23 @@ import markdown
 import os
 import shelve
 
-#import the flask framework
+# import the flask framework
 from flask import Flask, g, request, jsonify
+from flask_httpauth import HTTPBasicAuth, HTTPTokenAuth
 
+# 8/6/2020 - add basic auth for test purposes.
+# NOT FOR PRODUCTION
+auth = HTTPBasicAuth()
 
-#Create an instance of flask
+# 8/6/2020 - add toke auth for test purposes.
+# Hardcoded - no database
+authT = HTTPTokenAuth(scheme='Bearer')
+tokens = {
+    "secret-token-1": "john",
+    "secret-token-2": "susan"
+}
+
+# Create an instance of flask
 app = Flask(__name__)
 app.config["DEBUG"] = True
 
@@ -36,34 +48,74 @@ def get_db():
         db = g._database = shelve.open("devices.db")
     return db
 
+
 @app.teardown_appcontext
 def close_connection(exception):
     db = getattr(g, '_database', None)
     if db is not None:
         db.close()
 
+# 8/6/2020 add basic auth method - HARD CODED!
+
+
+@auth.verify_password
+def authenticate(username, password):
+    if username and password:
+        if username == 'osboxes' and password == 'osboxes':
+            return True
+        else:
+            return False
+    return False
+
+# 8/6/2020 add basic auth route
+
+
+@app.route('/rest-auth')
+@auth.login_required
+def get_response():
+    return jsonify("You are authorized to see this content.")
+
+# 8/6/2020 add token auth method
+
+
+@authT.verify_token
+def verify_token(token):
+    if token in tokens:
+        return tokens[token]
+
+# 8/6/2020 add token auth route
+
+
+@app.route('/rest-authT')
+@authT.login_required
+def chekToken():
+    return "Hello, {}!".format(authT.current_user())
+
 
 @app.route('/', methods=['GET'])
 def index():
     """Present some documentation"""
-    #Open the readme file
+    # Open the readme file
     with open(os.path.dirname(app.root_path) + '/README.md', 'r',  encoding='utf-8') as markdown_file:
 
-        #Read the content of the file
+        # Read the content of the file
         content = markdown_file.read()
 
-        #Convert to HTML
+        # Convert to HTML
         return markdown.markdown(content)
 
-#Test api for books library
+# Test api for books library
+
+
 @app.route('/books', methods=['GET'])
+@authT.login_required
 def api_books():
-    #return jsonify(books)
-    #return {'message': 'Success', 'data': books}
+    # return jsonify(books)
+    # return {'message': 'Success', 'data': books}
     return jsonify({'message': 'Success', 'data': books})
 
 
-@app.route('/devices/all', methods=['GET']) 
+@app.route('/devices/all', methods=['GET'])
 def api_all():
     shelf = get_db()
     keys = list(shelf.keys())
@@ -75,13 +127,15 @@ def api_all():
 
     return {'message': 'Success', 'data': devices}, 200
 
-@app.route('/devices', methods=['GET']) 
+
+@app.route('/devices', methods=['GET'])
 def api_getDevice():
 
     # If no ID is provided, display an error in the browser
     if 'identifier' in request.args:
         identifier = request.args['identifier']
-        response = {'message': 'Get device by identifier', 'identifier': identifier}
+        response = {'message': 'Get device by identifier',
+                    'identifier': identifier}
         shelf = get_db()
         if not (identifier in shelf):
             response['result'] = 'Device not found'
@@ -90,18 +144,21 @@ def api_getDevice():
             response['result'] = shelf[identifier]
             return response, 200
     else:
-        response = {'message': 'Error: No identifier field provided. Please specify an identifier.'}
+        response = {
+            'message': 'Error: No identifier field provided. Please specify an identifier.'}
         return response, 404
 
-    #this does not include the response code
-    #return response
+    # this does not include the response code
+    # return response
+
 
 @app.route('/device', methods=['DELETE'])
 def api_deleteDevice():
     # If no ID is provided, display an error in the browser
     if 'identifier' in request.args:
         identifier = request.args['identifier']
-        response = {'message': 'Remove device by identifier', 'identifier': identifier}
+        response = {'message': 'Remove device by identifier',
+                    'identifier': identifier}
         shelf = get_db()
         if not (identifier in shelf):
             response['result'] = 'Device not found'
@@ -109,17 +166,18 @@ def api_deleteDevice():
         else:
             del shelf[identifier]
             response['result'] = 'Success'
-			#you can use 204, but no content will be returned.  I would like a response
+            # you can use 204, but no content will be returned.  I would like a response
             return response, 200
     else:
-        response = {'message': 'Error: No identifier field provided. Please specify an identifier.'}
+        response = {
+            'message': 'Error: No identifier field provided. Please specify an identifier.'}
         return response, 404
 
-    #this does not include the response code
-    #return response
+    # this does not include the response code
+    # return response
 
 
-@app.route('/device', methods=['POST']) 
+@app.route('/device', methods=['POST'])
 def api_addupdDevice():
     validPayload = 1
     identifier = ''
@@ -143,7 +201,7 @@ def api_addupdDevice():
         controller_gateway = request.args['controller_gateway']
 
     if validPayload == 1:
-        processed = {'identifier': identifier }
+        processed = {'identifier': identifier}
         processed['name'] = name
         processed['device_type'] = device_type
         processed['controller_gateway'] = controller_gateway
@@ -155,13 +213,13 @@ def api_addupdDevice():
         return response, 201
 
     else:
-        response = {'message': 'Error: No identifier field provided. Please specify an identifier.'}
+        response = {
+            'message': 'Error: No identifier field provided. Please specify an identifier.'}
         response['payload'] = request.args
         return response, 404
 
 
-
-@app.route('/deviceTest', methods=['POST']) 
+@app.route('/deviceTest', methods=['POST'])
 def api_testDevice():
     validPayload = 1
     identifier = ''

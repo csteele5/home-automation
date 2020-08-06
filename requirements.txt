@@ -3,3 +3,4 @@
 flask
 flask_restful
 markdown==2.6.11
+Flask-HTTPAuth
